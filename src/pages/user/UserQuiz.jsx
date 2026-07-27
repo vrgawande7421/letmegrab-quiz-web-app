@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FaSpinner } from "react-icons/fa";
 import { getQuizById, submitQuiz } from "../../api/services/admin/AdminService";
 import QuestionCard from "./QuestionCard";
+import { Header } from "../../component/Header";
 
 const Quiz = () => {
   const { id } = useParams();
-
   const navigate = useNavigate();
 
   const [questions, setQuestions] = useState([]);
@@ -18,7 +17,6 @@ const Quiz = () => {
   const [userAnswerList, setUserAnswerList] = useState([]);
 
   const [isQuizStart, setIsQuizStart] = useState(false);
-
   const [timeLeft, setTimeLeft] = useState(300);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,7 +26,7 @@ const Quiz = () => {
 
       if (response.data.success) {
         setQuizTitle(response.data.data.title);
-        setQuestions(response.data.data.questions);
+        setQuestions(response.data.data.questions || []);
       }
     } catch (error) {
       console.log(error);
@@ -116,11 +114,19 @@ const Quiz = () => {
     handleSubmit(answerList);
   }, [timeLeft]);
 
-  if (questions.length === 0) {
+  if (questions.length < 10) {
     return (
-      <div className="flex flex-col justify-center items-center h-[70vh] gap-3">
-        <FaSpinner className="animate-spin text-blue-600 text-4xl" />
-        <h2 className="text-xl font-semibold text-gray-700">Loading Quiz...</h2>
+      <div className="text-center mt-20">
+        <Header />
+        <h2 className="text-2xl font-bold text-red-600 mt-10">
+          Admin not added 10 questions
+        </h2>
+        <button
+          onClick={() => navigate("/quiz-list")}
+          className="mt-5 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer"
+        >
+          Back to Quiz List
+        </button>
       </div>
     );
   }
@@ -128,9 +134,7 @@ const Quiz = () => {
   if (!isQuizStart) {
     return (
       <div className="flex flex-col justify-center items-center h-[80vh] gap-5">
-        <h2 className="text-3xl font-bold">
-          {quizTitle}
-        </h2>
+        <h2 className="text-3xl font-bold">{quizTitle}</h2>
 
         <p>Total Questions : {questions.length}</p>
 
@@ -146,20 +150,15 @@ const Quiz = () => {
 
   return (
     <div className="max-w-3xl mx-auto mt-10">
-
       {/* Timer */}
-
       <div className="flex justify-end mb-5">
-
         <h2 className="text-xl font-bold text-red-600">
           {Math.floor(timeLeft / 60)}:
           {(timeLeft % 60).toString().padStart(2, "0")}
         </h2>
-
       </div>
 
       {/* Question */}
-
       <QuestionCard
         question={questions[index]}
         currentQuestion={index + 1}
@@ -169,26 +168,18 @@ const Quiz = () => {
       />
 
       {/* Next */}
-
       <div className="flex justify-end mt-6">
-
         <button
           onClick={handleNext}
           disabled={isSubmitting}
-          className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-semibold flex items-center gap-2"
+          className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-semibold"
         >
-          {isSubmitting ? (
-            <>
-              <FaSpinner className="animate-spin text-sm" />
-              <span>Submitting...</span>
-            </>
-          ) : index === questions.length - 1 ? (
-            "Submit"
-          ) : (
-            "Next"
-          )}
+          {isSubmitting
+            ? "Submitting..."
+            : index === questions.length - 1
+            ? "Submit"
+            : "Next"}
         </button>
-
       </div>
     </div>
   );
