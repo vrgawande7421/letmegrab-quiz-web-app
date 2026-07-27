@@ -5,27 +5,27 @@ import { FaSpinner } from "react-icons/fa";
 
 import { deleteQuestion, getQuizById } from "../../api/services/admin/AdminService";
 import QuestionModal from "./QuestionModal";
+import ConfirmModal from "../../component/ConfirmModel";
 
 const ManageQuestion = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
-
   const [quiz, setQuiz] = useState(null);
-
   const [showModal, setShowModal] = useState(false);
-
   const [isEdit, setIsEdit] = useState(false);
-
   const [editQuestion, setEditQuestion] = useState(null);
+
+  // Delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteQuestionId, setDeleteQuestionId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchQuiz = async () => {
     try {
       setLoading(true);
-
       const response = await getQuizById(quizId);
-
       setQuiz(response.data.data);
     } catch (error) {
       toast.error(error.response?.data?.message || "Something went wrong");
@@ -55,21 +55,25 @@ const ManageQuestion = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (questionId) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this question?"
-    );
+  const openDeleteConfirmation = (questionId) => {
+    setDeleteQuestionId(questionId);
+    setShowDeleteModal(true);
+  };
 
-    if (!confirmDelete) return;
+  const handleConfirmDelete = async () => {
+    if (!deleteQuestionId) return;
 
     try {
-      await deleteQuestion(quizId, questionId);
-
+      setDeleting(true);
+      await deleteQuestion(quizId, deleteQuestionId);
       toast.success("Question deleted successfully");
-
+      setShowDeleteModal(false);
+      setDeleteQuestionId(null);
       fetchQuiz();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Something went wrong");
+      toast.error(error.response?.data?.message || "Failed to delete question");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -88,15 +92,17 @@ const ManageQuestion = () => {
         Quiz not found
       </div>
     );
-  } return (
+  }
+
+  return (
     <div className="max-w-6xl mx-auto mt-10 px-4">
       <div className="flex justify-between items-center mb-6">
         <div>
           <button
             onClick={() => navigate("/admin")}
-            className="bg-gray-600 text-white px-4 py-2 rounded cursor-pointer"
+            className="bg-gray-600 text-white px-4 py-2 rounded cursor-pointer hover:bg-gray-700 transition"
           >
-            Back
+            ← Back
           </button>
         </div>
 
@@ -109,30 +115,30 @@ const ManageQuestion = () => {
 
         <button
           onClick={handleAddQuestion}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer font-medium transition"
         >
-          Add Question
+          + Add Question
         </button>
       </div>
 
       <div className="space-y-4">
         {quiz.questions.length === 0 ? (
-          <div className="border rounded-lg p-6 text-center">
+          <div className="border rounded-lg p-6 text-center text-gray-500">
             No Questions Added
           </div>
         ) : (
           quiz.questions.map((item, index) => (
             <div
               key={item._id}
-              className="border rounded-lg p-4 bg-white shadow"
+              className="border rounded-lg p-4 bg-white shadow-sm hover:shadow transition"
             >
               <div className="flex justify-between items-center">
                 <div className="flex gap-3 items-center">
-                  <div className="bg-blue-600 text-white w-8 h-8 rounded-full flex justify-center items-center">
+                  <div className="bg-blue-600 text-white w-8 h-8 rounded-full flex justify-center items-center font-bold">
                     {index + 1}
                   </div>
 
-                  <h2 className="font-semibold">
+                  <h2 className="font-semibold text-gray-800">
                     {item.question}
                   </h2>
                 </div>
@@ -140,37 +146,38 @@ const ManageQuestion = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleEdit(item)}
-                    className="bg-yellow-500 text-white px-3 py-1 rounded"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded cursor-pointer transition text-sm"
                   >
                     Edit
                   </button>
 
                   <button
-                    onClick={() => handleDelete(item._id)}
-                    className="bg-red-500 text-white px-3 py-1 rounded"
+                    onClick={() => openDeleteConfirmation(item._id)}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded cursor-pointer transition text-sm"
                   >
                     Delete
                   </button>
                 </div>
               </div>
 
-              <hr className="my-4" />
+              <hr className="my-4 border-gray-200" />
 
               <div className="grid grid-cols-2 gap-3">
                 {item.options.map((option, i) => (
                   <div
                     key={i}
-                    className={`border rounded px-3 py-2 flex justify-between items-center ${i === item.correctAnswer
-                        ? "bg-green-50 border-green-500"
-                        : ""
-                      }`}
+                    className={`border rounded px-3 py-2 flex justify-between items-center text-sm ${
+                      i === item.correctAnswer
+                        ? "bg-green-50 border-green-500 text-green-800 font-medium"
+                        : "text-gray-700"
+                    }`}
                   >
                     <span>
                       {String.fromCharCode(65 + i)}. {option}
                     </span>
 
                     {i === item.correctAnswer && (
-                      <span className="text-green-600 text-sm">
+                      <span className="text-green-600 text-xs font-bold">
                         ✓ Correct
                       </span>
                     )}
@@ -191,6 +198,19 @@ const ManageQuestion = () => {
           editQuestion={editQuestion}
         />
       )}
+
+      {/* Delete Question Confirmation Modal */}
+      <ConfirmModal
+        open={showDeleteModal}
+        title="Delete Question"
+        message="Are you sure you want to delete this question?"
+        onCancel={() => {
+          setShowDeleteModal(false);
+          setDeleteQuestionId(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        loading={deleting}
+      />
     </div>
   );
 };
