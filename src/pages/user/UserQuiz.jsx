@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { FaSpinner } from "react-icons/fa";
 import { getQuizById, submitQuiz } from "../../api/services/admin/AdminService";
 import QuestionCard from "./QuestionCard";
 import { Header } from "../../component/Header";
@@ -11,6 +12,7 @@ const Quiz = () => {
 
   const [questions, setQuestions] = useState([]);
   const [quizTitle, setQuizTitle] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const [index, setIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -22,6 +24,7 @@ const Quiz = () => {
 
   const fetchQuiz = async () => {
     try {
+      setLoading(true);
       const response = await getQuizById(id);
 
       if (response.data.success) {
@@ -31,6 +34,8 @@ const Quiz = () => {
     } catch (error) {
       console.log(error);
       toast.error("Failed to load quiz");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,11 +119,23 @@ const Quiz = () => {
     handleSubmit(answerList);
   }, [timeLeft]);
 
+  // Loading spinner + text
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-[70vh] gap-3">
+        <FaSpinner className="animate-spin text-blue-600 text-4xl" />
+        <h2 className="text-xl font-semibold text-gray-700">
+          Loading Quiz...
+        </h2>
+      </div>
+    );
+  }
+
+  // Mandatory 10 questions check
   if (questions.length < 10) {
     return (
       <div className="text-center mt-20">
-        <Header />
-        <h2 className="text-2xl font-bold text-red-600 mt-10">
+        <h2 className="text-2xl font-bold text-red-600">
           Admin not added 10 questions
         </h2>
         <button
@@ -172,13 +189,18 @@ const Quiz = () => {
         <button
           onClick={handleNext}
           disabled={isSubmitting}
-          className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-semibold"
+          className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-semibold flex items-center gap-2"
         >
-          {isSubmitting
-            ? "Submitting..."
-            : index === questions.length - 1
-            ? "Submit"
-            : "Next"}
+          {isSubmitting ? (
+            <>
+              <FaSpinner className="animate-spin text-sm" />
+              <span>Submitting...</span>
+            </>
+          ) : index === questions.length - 1 ? (
+            "Submit"
+          ) : (
+            "Next"
+          )}
         </button>
       </div>
     </div>

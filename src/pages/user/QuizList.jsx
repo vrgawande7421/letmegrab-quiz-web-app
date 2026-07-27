@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaSpinner } from "react-icons/fa";
 import { getAllQuiz } from "../../api/services/admin/AdminService";
-
 
 const QuizList = () => {
   const [quizList, setQuizList] = useState([]);
@@ -29,8 +29,9 @@ const QuizList = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-[70vh]">
-        <h2 className="text-xl font-semibold">Loading Quiz...</h2>
+      <div className="flex flex-col justify-center items-center h-[70vh] gap-3">
+        <FaSpinner className="animate-spin text-blue-600 text-4xl" />
+        <h2 className="text-xl font-semibold text-gray-700">Loading Quiz...</h2>
       </div>
     );
   }
